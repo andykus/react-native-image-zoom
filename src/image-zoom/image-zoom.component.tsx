@@ -74,7 +74,17 @@ export default class ImageViewer extends React.Component<Props, State> {
   // 是否在左右滑
   private isHorizontalWrap = false;
 
+  calculateInitialScale() {
+    if (!this.props.scaleToFit) {
+      return 1;
+    }
+
+    return this.props.cropWidth / this.props.imageWidth;
+  }
+
   public componentWillMount() {
+    this.scale = this.calculateInitialScale();
+    this.animatedScale.setValue(this.scale);
     this.imagePanResponder = PanResponder.create({
       // 要求成为响应者：
       onStartShouldSetPanResponder: () => true,
@@ -136,9 +146,10 @@ export default class ImageViewer extends React.Component<Props, State> {
             this.isDoubleClick = true;
 
             if (this.props.enableDoubleClickZoom) {
-              if (this.scale > 1 || this.scale < 1) {
+              const initialScale = this.calculateInitialScale();
+              if (this.scale > initialScale || this.scale < initialScale) {
                 // 回归原位
-                this.scale = 1;
+                this.scale = initialScale
 
                 this.positionX = 0;
                 this.positionY = 0;
@@ -149,7 +160,7 @@ export default class ImageViewer extends React.Component<Props, State> {
                 const beforeScale = this.scale;
 
                 // 开始缩放
-                this.scale = 2;
+                this.scale = initialScale * 2;
 
                 // 缩放 diff
                 const diffScale = this.scale - beforeScale;
@@ -463,8 +474,8 @@ export default class ImageViewer extends React.Component<Props, State> {
   public resetScale = () => {
     this.positionX = 0;
     this.positionY = 0;
-    this.scale = 1;
-    this.animatedScale.setValue(1);
+    this.scale = this.calculateInitialScale();
+    this.animatedScale.setValue(this.scale);
   };
 
   public panResponderReleaseResolve = () => {
@@ -479,9 +490,11 @@ export default class ImageViewer extends React.Component<Props, State> {
       }
     }
 
-    if (this.props.enableCenterFocus && this.scale < 1) {
+    const initialScale = this.calculateInitialScale();
+
+    if (this.props.enableCenterFocus && this.scale < initialScale) {
       // 如果缩放小于1，强制重置为 1
-      this.scale = 1;
+      this.scale = initialScale;
       Animated.timing(this.animatedScale, {
         toValue: this.scale,
         duration: 100
@@ -537,7 +550,7 @@ export default class ImageViewer extends React.Component<Props, State> {
     }
 
     // 拖拽正常结束后,如果没有缩放,直接回到0,0点
-    if (this.props.enableCenterFocus && this.scale === 1) {
+    if (this.props.enableCenterFocus && this.scale === initialScale) {
       this.positionX = 0;
       this.positionY = 0;
       Animated.timing(this.animatedPositionX, {
@@ -630,7 +643,7 @@ export default class ImageViewer extends React.Component<Props, State> {
    * 重置大小和位置
    */
   public reset() {
-    this.scale = 1;
+    this.scale = this.calculateInitialScale();
     this.animatedScale.setValue(this.scale);
     this.positionX = 0;
     this.animatedPositionX.setValue(this.positionX);

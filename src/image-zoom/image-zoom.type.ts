@@ -23,6 +23,8 @@ export interface IOnClick {
 }
 
 export class Props {
+  public scaleToFit: boolean = false;
+
   /**
    * 操作区域宽度
    */
